@@ -16,7 +16,25 @@ const envSchema = z
         if (indexOfPort === -1) return port;
         port = Number(process.argv[indexOfPort + 1]) || 5000;
         return port;
-      })
+      }),
+
+    MONGO_URI: z.string().url(),
+    TURSO_DATABASE_URL: z.string().url(),
+    TURSO_AUTH_TOKEN: z.string(),
+    SESSION_SECRET: z.string(),
+
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
+    GOOGLE_CALLBACK_URL: z.string(),
+    AUTH_REDIRECT_URI: z
+      .string()
+      .optional()
+      .transform((uri) => uri || '/'),
+
+    FRONTEND_URLS: z
+      .string()
+      .optional()
+      .transform((urls) => (urls || '').split(' '))
   })
   .readonly();
 
@@ -27,6 +45,7 @@ export const validateEnv = () => {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
+    if (error instanceof Error) console.error(error.message);
     console.log(`Environment variables validation failed\nExitting app`.red);
     process.exit(1);
   }

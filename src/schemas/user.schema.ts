@@ -12,7 +12,8 @@ export const users = sqliteTable(
       .notNull()
       .default('user'),
     phone: integer('phone'),
-    address: text('address')
+    address: text('address'),
+    active: integer('active', { mode: 'boolean' }).notNull().default(true)
   },
   function constraints(users) {
     return {
@@ -30,14 +31,15 @@ export const selectUserSnapshot = {
   image: users.image,
   role: users.role,
   phone: users.phone,
-  address: users.address
+  address: users.address,
+  active: users.active
 };
 export type UserSnapshot = {
   id: string;
   name: string;
   email: string;
   image: string | null;
-  role: string;
+  role: 'user' | 'admin' | 'staff';
   phone: number | null;
-  address: string | null;
+  active: boolean;
 };

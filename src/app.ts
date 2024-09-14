@@ -11,6 +11,8 @@ import { handleAsync } from './middlewares/handle-async';
 import { handleErrorRequest } from './middlewares/handle-error-request';
 import { GoogleStrategy } from './passport/google.strategy';
 import { serializer } from './passport/serializer';
+import { appointmentRoute } from './routes/appointment.route';
+import { serviceRoute } from './routes/service.route';
 import { userRoute } from './routes/user.route';
 
 const app = express();
@@ -40,6 +42,8 @@ app.get(
 
 /* --------- routes --------- */
 app.use('/api', userRoute);
+app.use('/api/services', serviceRoute);
+app.use('/api/appointments', appointmentRoute);
 app.use(() => {
   throw new NotFoundException();
 });

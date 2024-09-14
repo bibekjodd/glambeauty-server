@@ -1,5 +1,5 @@
 import { createId } from '@paralleldrive/cuid2';
-import { foreignKey, index, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { foreignKey, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { users } from './user.schema';
 
 export const appointments = sqliteTable(
@@ -7,10 +7,12 @@ export const appointments = sqliteTable(
   {
     id: text('id').notNull().$defaultFn(createId),
     customer_id: text('customer_id').notNull(),
-    service_id: text('service_id').notNull(),
+    service_id: text('service_id'),
     staff_id: text('staff_id').notNull(),
     date: text('staff_id').notNull(),
-    status: text('staff_id', { enum: ['pending', 'completed', 'cancelled'] }).notNull()
+    status: text('staff_id', { enum: ['pending', 'completed', 'cancelled'] }).notNull(),
+    cancelReason: text('cancel_reason'),
+    isRescheduled: integer('is_rescheduled', { mode: 'boolean' }).default(false)
   },
   function (appointments) {
     return {
@@ -28,7 +30,7 @@ export const appointments = sqliteTable(
         columns: [appointments.service_id],
         foreignColumns: [users.id]
       })
-        .onDelete('cascade')
+        .onDelete('set null')
         .onUpdate('cascade'),
 
       staffReference: foreignKey({
@@ -51,7 +53,9 @@ export const selectAppointmentSnapshot = {
   service_id: appointments.service_id,
   staff_id: appointments.staff_id,
   date: appointments.date,
-  status: appointments.status
+  status: appointments.status,
+  cancelReason: appointments.cancelReason,
+  isRescheduled: appointments.isRescheduled
 };
 
 export type Appointment = {
@@ -61,4 +65,6 @@ export type Appointment = {
   staff_id: string;
   date: string;
   status: 'pending' | 'completed' | 'cancelled';
+  cancelReason: string | null;
+  isRescheduled: boolean;
 };

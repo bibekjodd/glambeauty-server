@@ -11,6 +11,7 @@ export const createService = handleAsync(async (req, res) => {
   if (req.user.role !== 'admin') throw new ForbiddenException('Only admin can add the service');
 
   const data = createServiceSchema.parse(req.body);
+
   const [service] = await db.insert(services).values(data).returning();
   return res.json({ message: 'New service added successfully', service });
 });

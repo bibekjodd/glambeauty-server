@@ -12,6 +12,7 @@ export const registerAppointmentSchema = z.object({
       nextMonth.setSeconds(0);
       nextMonth.setMilliseconds(0);
       if (date < new Date().toISOString() || date > nextMonth.toISOString()) return false;
+      return true;
     }, 'Invalid date selected')
 });
 export type RegisterAppointmentSchema = z.infer<typeof registerAppointmentSchema>;
@@ -21,11 +22,11 @@ export const getAppointmentsQuerySchema = z.object({
     .string()
     .datetime()
     .default(() => {
-      const date = new Date(31 * 24 * 60 * 60 * 1000);
+      const date = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
       return date.toISOString();
     })
 });
 
 export const getAdminAppointmentsQuerySchema = getAppointmentsQuerySchema.extend({
-  userId: z.string().optional()
+  user_id: z.string().optional()
 });

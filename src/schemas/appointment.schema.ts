@@ -9,8 +9,9 @@ export const appointments = sqliteTable(
     customer_id: text('customer_id').notNull(),
     service_id: text('service_id'),
     staff_id: text('staff_id').notNull(),
-    date: text('staff_id').notNull(),
-    status: text('staff_id', { enum: ['pending', 'completed', 'cancelled'] }).notNull(),
+    starts_at: text('starts_at').notNull(),
+    ends_at: text('ends_at').notNull(),
+    status: text('status', { enum: ['pending', 'completed', 'cancelled'] }).notNull(),
     cancelReason: text('cancel_reason'),
     isRescheduled: integer('is_rescheduled', { mode: 'boolean' }).default(false)
   },
@@ -52,19 +53,11 @@ export const selectAppointmentSnapshot = {
   customer_id: appointments.customer_id,
   service_id: appointments.service_id,
   staff_id: appointments.staff_id,
-  date: appointments.date,
+  starts_at: appointments.starts_at,
+  ends_at: appointments.ends_at,
   status: appointments.status,
   cancelReason: appointments.cancelReason,
   isRescheduled: appointments.isRescheduled
 };
 
-export type Appointment = {
-  id: string;
-  customer_id: string;
-  service_id: string;
-  staff_id: string;
-  date: string;
-  status: 'pending' | 'completed' | 'cancelled';
-  cancelReason: string | null;
-  isRescheduled: boolean;
-};
+export type Appointment = typeof appointments.$inferSelect;

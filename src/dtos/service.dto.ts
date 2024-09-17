@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { imageSchema } from './user.dto';
 
 export const createServiceSchema = z.object({
-  title: z.string().min(4, 'Too short title').max(200, 'Too long service title'),
+  title: z.string().trim().min(4, 'Too short title').max(200, 'Too long service title'),
+  description: z.string().trim().max(500, 'Too long description'),
   price: z
     .number()
     .min(500, 'Service charge must be minimum Rs. 500')
@@ -9,8 +11,9 @@ export const createServiceSchema = z.object({
   duration: z
     .number()
     .min(0.5, 'Service duration must be at least half hours')
-    .max(12, "Service duration can't exceed 6 hours")
-    .transform((val) => Math.round(val * 2) / 4),
-  active: z.boolean()
+    .max(12, "Service duration can't exceed 12 hours")
+    .transform((val) => Math.round(val * 2) / 2),
+  active: z.boolean().default(true),
+  image: imageSchema.optional()
 });
-export const updateServiceSchema = createServiceSchema;
+export const updateServiceSchema = createServiceSchema.partial();

@@ -23,10 +23,14 @@ export const registerAppointment = handleAsync(async (req, res) => {
     throw new ForbiddenException("Admin or staffs can't request for appointment");
 
   const { date, serviceId, staffId } = registerAppointmentSchema.parse(req.body);
-  await checkAppointmentAvailability({ date, serviceId, staffId });
+  const { service } = await checkAppointmentAvailability({ date, serviceId, staffId });
+  const ends_at = new Date(
+    new Date(date).getTime() + service.duration * 60 * 60 * 1000
+  ).toISOString();
   await db.insert(appointments).values({
     customer_id: req.user.id,
-    date,
+    starts_at: date,
+    ends_at,
     staff_id: staffId,
     service_id: serviceId,
     status: 'pending'
@@ -51,11 +55,11 @@ export const getAllAppointments = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
   if (req.user.role !== 'admin')
     throw new ForbiddenException('Only admins can access requested resource');
-  const { cursor, userId } = getAdminAppointmentsQuerySchema.parse(req.body);
+  const { cursor, user_id } = getAdminAppointmentsQuerySchema.parse(req.body);
 
   let user: User | undefined = undefined;
-  if (userId) {
-    [user] = await db.select().from(users).where(eq(users.id, userId));
+  if (user_id) {
+    [user] = await db.select().from(users).where(eq(users.id, user_id));
   }
 
   if (user) {
@@ -89,11 +93,14 @@ export const rescheduleAppointment = handleAsync<{ id: string }>(async (req, res
     throw new BadRequestException(`Appointment is already ${appointment.status}`);
 
   const data = registerAppointmentSchema.parse(req.body);
-  await checkAppointmentAvailability(data);
+  const { service } = await checkAppointmentAvailability(data);
+  const ends_at = new Date(
+    new Date(data.date).getTime() + service.duration * 60 * 60 * 1000
+  ).toISOString();
 
   await db
     .update(appointments)
-    .set({ date: data.date, isRescheduled: true })
+    .set({ starts_at: data.date, isRescheduled: true, ends_at })
     .where(eq(appointments.id, appointmentId));
 
   return res.json({ message: 'Appointment rescheduled successfully' });
@@ -108,6 +115,7 @@ export const cancelAppointment = handleAsync<{ id: string }, unknown, { cancelRe
 
     let cancelReason: string | null = null;
     if (typeof req.body.cancelReason === 'string') cancelReason = req.body.cancelReason;
+    cancelReason = cancelReason?.trim().slice(0, 200) || null;
 
     const appointmentId = req.params.id;
     const [appointment] = await db
@@ -119,7 +127,10 @@ export const cancelAppointment = handleAsync<{ id: string }, unknown, { cancelRe
     if (appointment.status !== 'pending')
       throw new BadRequestException(`Appointment is already ${appointment.status}`);
 
-    await db.update(appointments).set({ cancelReason }).where(eq(appointments.id, appointmentId));
+    await db
+      .update(appointments)
+      .set({ cancelReason, status: 'cancelled' })
+      .where(eq(appointments.id, appointmentId));
     return res.json({ message: 'Appointment cancelled successfully' });
   }
 );

@@ -1,5 +1,5 @@
 import { EnvType } from '@/config/env.config';
-import { UserSnapshot } from './schemas/user.schema';
+import { User as TUser } from './schemas/user.schema';
 
 export {};
 declare global {
@@ -8,9 +8,9 @@ declare global {
   }
 
   namespace Express {
-    interface User extends UserSnapshot {}
+    interface User extends TUser {}
     interface Request {
-      user: UserSnapshot;
+      user: TUser;
     }
   }
 }

@@ -1,5 +1,5 @@
 import { createId } from '@paralleldrive/cuid2';
-import { integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import { alias, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable(
   'users',
@@ -22,8 +22,8 @@ export const users = sqliteTable(
     };
   }
 );
+export const customers = alias(users, 'customers');
 
-export type User = typeof users.$inferSelect;
 export const selectUserSnapshot = {
   id: users.id,
   name: users.name,
@@ -34,12 +34,16 @@ export const selectUserSnapshot = {
   address: users.address,
   active: users.active
 };
-export type UserSnapshot = {
-  id: string;
-  name: string;
-  email: string;
-  image: string | null;
-  role: 'user' | 'admin' | 'staff';
-  phone: number | null;
-  active: boolean;
+export const selectCustomerSnapshot = {
+  id: customers.id,
+  name: customers.name,
+  email: customers.email,
+  image: customers.image,
+  role: customers.role,
+  phone: customers.phone,
+  address: customers.address,
+  active: customers.active
 };
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;

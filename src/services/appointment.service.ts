@@ -1,13 +1,18 @@
 import { db } from '@/lib/database';
 import { appointments, selectAppointmentSnapshot } from '@/schemas/appointment.schema';
 import { selectServicesSnapshot, Service, services } from '@/schemas/service.schema';
-import { selectUserSnapshot, User, users } from '@/schemas/user.schema';
+import {
+  customers,
+  selectCustomerSnapshot,
+  selectUserSnapshot,
+  User,
+  users
+} from '@/schemas/user.schema';
 import { and, desc, eq, gt, lt, sql } from 'drizzle-orm';
 
 import { RegisterAppointmentSchema } from '@/dtos/appointment.dto';
 import { BadRequestException, NotFoundException } from '@/lib/exceptions';
 import { lte } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/sqlite-core';
 
 export const checkAppointmentAvailability = async ({
   date,
@@ -23,10 +28,10 @@ export const checkAppointmentAvailability = async ({
     .leftJoin(
       appointments,
       and(
-        lte(appointments.starts_at, date),
-        gt(appointments.ends_at, date),
+        lte(appointments.startsAt, date),
+        gt(appointments.endsAt, date),
         eq(appointments.status, 'pending'),
-        eq(appointments.staff_id, users.id)
+        eq(appointments.staffId, users.id)
       )
     )
     .where(and(eq(users.id, staffId), eq(users.role, 'staff')))
@@ -46,28 +51,27 @@ type FetchAppointmentsOptions =
     }
   | { cursor: string; userId: null; entity: null };
 export const fetchAppointments = async ({ cursor, userId, entity }: FetchAppointmentsOptions) => {
-  const customers = alias(users, 'customers');
   const result = await db
     .select({
       ...selectAppointmentSnapshot,
-      customer: selectUserSnapshot,
+      customer: selectCustomerSnapshot,
       staff: selectUserSnapshot,
       service: selectServicesSnapshot
     })
     .from(appointments)
     .where(
       and(
-        lt(appointments.starts_at, cursor),
+        lt(appointments.startsAt, cursor),
         userId
-          ? eq(entity === 'customer' ? appointments.customer_id : appointments.staff_id, userId)
+          ? eq(entity === 'customer' ? appointments.customerId : appointments.staffId, userId)
           : undefined
       )
     )
-    .innerJoin(customers, eq(appointments.customer_id, customers.id))
-    .innerJoin(users, eq(appointments.staff_id, users.id))
-    .leftJoin(services, eq(appointments.service_id, services.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
+    .innerJoin(users, eq(appointments.staffId, users.id))
+    .innerJoin(services, eq(appointments.serviceId, services.id))
     .groupBy(appointments.id)
-    .orderBy(desc(appointments.starts_at))
+    .orderBy(desc(appointments.startsAt))
     .limit(20);
   return result;
 };

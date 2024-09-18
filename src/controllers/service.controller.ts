@@ -30,7 +30,7 @@ export const updateService = handleAsync<{ id: string }>(async (req, res) => {
   const pendingAppointments = await db
     .select({ id: appointments.id })
     .from(appointments)
-    .where(and(eq(appointments.service_id, serviceId), eq(appointments.status, 'pending')));
+    .where(and(eq(appointments.serviceId, serviceId), eq(appointments.status, 'pending')));
 
   if (pendingAppointments.length !== 0)
     throw new BadRequestException(
@@ -55,7 +55,7 @@ export const deleteService = handleAsync<{ id: string }>(async (req, res) => {
   const pendingAppointments = await db
     .select({ id: appointments.id })
     .from(appointments)
-    .where(and(eq(appointments.service_id, serviceId), eq(appointments.status, 'pending')));
+    .where(and(eq(appointments.serviceId, serviceId), eq(appointments.status, 'pending')));
 
   if (pendingAppointments.length !== 0)
     throw new BadRequestException(

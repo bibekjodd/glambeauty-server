@@ -13,6 +13,7 @@ import { GoogleStrategy } from './passport/google.strategy';
 import { serializer } from './passport/serializer';
 import { appointmentRoute } from './routes/appointment.route';
 import { serviceRoute } from './routes/service.route';
+import { statsRoute } from './routes/stats.route';
 import { userRoute } from './routes/user.route';
 
 const app = express();
@@ -44,6 +45,7 @@ app.get(
 app.use('/api', userRoute);
 app.use('/api/services', serviceRoute);
 app.use('/api/appointments', appointmentRoute);
+app.use('/api/stats', statsRoute);
 app.use(() => {
   throw new NotFoundException();
 });

@@ -11,8 +11,15 @@ import {
   UnauthorizedException
 } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
-import { appointments } from '@/schemas/appointment.schema';
-import { User, users } from '@/schemas/user.schema';
+import { appointments, selectAppointmentSnapshot } from '@/schemas/appointment.schema';
+import { selectServicesSnapshot, services } from '@/schemas/service.schema';
+import {
+  customers,
+  selectCustomerSnapshot,
+  selectUserSnapshot,
+  User,
+  users
+} from '@/schemas/user.schema';
 import { checkAppointmentAvailability, fetchAppointments } from '@/services/appointment.service';
 import { eq } from 'drizzle-orm';
 
@@ -24,19 +31,27 @@ export const registerAppointment = handleAsync(async (req, res) => {
 
   const { date, serviceId, staffId } = registerAppointmentSchema.parse(req.body);
   const { service } = await checkAppointmentAvailability({ date, serviceId, staffId });
-  const ends_at = new Date(
+  const endsAt = new Date(
     new Date(date).getTime() + service.duration * 60 * 60 * 1000
   ).toISOString();
-  await db.insert(appointments).values({
-    customer_id: req.user.id,
-    starts_at: date,
-    ends_at,
-    staff_id: staffId,
-    service_id: serviceId,
-    status: 'pending'
-  });
+  const [bookedAppointment] = await db
+    .insert(appointments)
+    .values({
+      customerId: req.user.id,
+      startsAt: date,
+      endsAt,
+      staffId,
+      serviceId,
+      status: 'pending'
+    })
+    .returning();
 
-  return res.json({ message: 'Appointment registered successfully' });
+  if (!bookedAppointment) throw new BadRequestException(`Unknown error occurred`);
+
+  return res.json({
+    message: 'Appointment registered successfully',
+    appointmentId: bookedAppointment.id
+  });
 });
 
 export const getAppointments = handleAsync(async (req, res) => {
@@ -74,6 +89,24 @@ export const getAllAppointments = handleAsync(async (req, res) => {
   return res.json({ appointments: result });
 });
 
+export const getAppointmentDetail = handleAsync<{ id: string }>(async (req, res) => {
+  const appointmentId = req.params.id;
+  const [appointment] = await db
+    .select({
+      ...selectAppointmentSnapshot,
+      customer: selectCustomerSnapshot,
+      staff: selectUserSnapshot,
+      service: selectServicesSnapshot
+    })
+    .from(appointments)
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
+    .innerJoin(users, eq(appointments.staffId, users.id))
+    .leftJoin(services, eq(appointments.serviceId, services.id))
+    .where(eq(appointments.id, appointmentId));
+  if (!appointment) throw new NotFoundException('Appointment not found');
+  return res.json({ appointment });
+});
+
 export const rescheduleAppointment = handleAsync<{ id: string }>(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
 
@@ -94,13 +127,13 @@ export const rescheduleAppointment = handleAsync<{ id: string }>(async (req, res
 
   const data = registerAppointmentSchema.parse(req.body);
   const { service } = await checkAppointmentAvailability(data);
-  const ends_at = new Date(
+  const endsAt = new Date(
     new Date(data.date).getTime() + service.duration * 60 * 60 * 1000
   ).toISOString();
 
   await db
     .update(appointments)
-    .set({ starts_at: data.date, isRescheduled: true, ends_at })
+    .set({ startsAt: data.date, isRescheduled: true, endsAt })
     .where(eq(appointments.id, appointmentId));
 
   return res.json({ message: 'Appointment rescheduled successfully' });

@@ -95,10 +95,10 @@ export const availableStaffs = handleAsync(async (req, res) => {
     .leftJoin(
       appointments,
       and(
-        lte(appointments.starts_at, starts_at),
-        gt(appointments.ends_at, starts_at),
+        lte(appointments.startsAt, starts_at),
+        gt(appointments.endsAt, starts_at),
         eq(appointments.status, 'pending'),
-        eq(appointments.staff_id, users.id)
+        eq(appointments.staffId, users.id)
       )
     )
     .where(eq(users.role, 'staff'))

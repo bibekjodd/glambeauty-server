@@ -1,6 +1,6 @@
 import { env } from '@/config/env.config';
-import { CookieOptions, SessionOptions } from 'express-session';
 import MongoStore from 'connect-mongo';
+import { CookieOptions, SessionOptions } from 'express-session';
 
 export const devConsole = (...args: string[]) => {
   if (env.NODE_ENV !== 'production') {

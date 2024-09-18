@@ -30,3 +30,4 @@ export const selectServicesSnapshot = {
 };
 
 export type Service = typeof services.$inferSelect;
+export type InsertService = typeof services.$inferInsert;

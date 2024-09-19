@@ -8,7 +8,6 @@ import { and, desc, eq, lt } from 'drizzle-orm';
 export const getNotifications = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
 
-  console.log('get notifications');
   const { cursor, limit } = getNotificationsQuerySchema.parse(req.query);
 
   const result = await db

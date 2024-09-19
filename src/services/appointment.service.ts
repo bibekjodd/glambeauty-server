@@ -1,5 +1,9 @@
 import { db } from '@/lib/database';
-import { appointments, selectAppointmentSnapshot } from '@/schemas/appointment.schema';
+import {
+  appointments,
+  AppointmentStatus,
+  selectAppointmentSnapshot
+} from '@/schemas/appointment.schema';
 import { selectServicesSnapshot, Service, services } from '@/schemas/service.schema';
 import {
   customers,
@@ -48,9 +52,15 @@ type FetchAppointmentsOptions =
       cursor: string;
       userId: string;
       entity: 'customer' | 'staff';
+      status: AppointmentStatus | undefined;
     }
-  | { cursor: string; userId: null; entity: null };
-export const fetchAppointments = async ({ cursor, userId, entity }: FetchAppointmentsOptions) => {
+  | { cursor: string; userId: null; entity: null; status: AppointmentStatus | undefined };
+export const fetchAppointments = async ({
+  cursor,
+  userId,
+  entity,
+  status
+}: FetchAppointmentsOptions) => {
   const result = await db
     .select({
       ...selectAppointmentSnapshot,
@@ -64,7 +74,8 @@ export const fetchAppointments = async ({ cursor, userId, entity }: FetchAppoint
         lt(appointments.startsAt, cursor),
         userId
           ? eq(entity === 'customer' ? appointments.customerId : appointments.staffId, userId)
-          : undefined
+          : undefined,
+        status ? eq(appointments.status, status) : undefined
       )
     )
     .innerJoin(customers, eq(appointments.customerId, customers.id))

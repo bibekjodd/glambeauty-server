@@ -24,7 +24,8 @@ export const getAppointmentsQuerySchema = z.object({
     .default(() => {
       const date = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
       return date.toISOString();
-    })
+    }),
+  status: z.enum(['pending', 'cancelled', 'completed']).optional()
 });
 
 export const getAdminAppointmentsQuerySchema = getAppointmentsQuerySchema.extend({

@@ -67,11 +67,12 @@ export const registerAppointment = handleAsync(async (req, res) => {
 export const getAppointments = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
 
-  const { cursor } = getAppointmentsQuerySchema.parse(req.query);
+  const { cursor, status } = getAppointmentsQuerySchema.parse(req.query);
   const result = await fetchAppointments({
     cursor,
     entity: req.user.role === 'user' ? 'customer' : 'staff',
-    userId: req.user.id
+    userId: req.user.id,
+    status
   });
   return res.json({ appointments: result });
 });
@@ -80,7 +81,7 @@ export const getAllAppointments = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
   if (req.user.role !== 'admin')
     throw new ForbiddenException('Only admins can access requested resource');
-  const { cursor, user_id } = getAdminAppointmentsQuerySchema.parse(req.body);
+  const { cursor, user_id, status } = getAdminAppointmentsQuerySchema.parse(req.query);
 
   let user: User | undefined = undefined;
   if (user_id) {
@@ -90,12 +91,13 @@ export const getAllAppointments = handleAsync(async (req, res) => {
   if (user) {
     const result = await fetchAppointments({
       cursor,
+      status,
       entity: user.role === 'staff' ? 'staff' : 'customer',
       userId: user.id
     });
     return res.json({ appointments: result });
   }
-  const result = await fetchAppointments({ cursor, entity: null, userId: null });
+  const result = await fetchAppointments({ cursor, entity: null, userId: null, status });
   return res.json({ appointments: result });
 });
 
@@ -184,7 +186,7 @@ export const cancelAppointment = handleAsync<{ id: string }, unknown, { cancelRe
       .from(appointments)
       .where(eq(appointments.id, appointmentId))
       .leftJoin(services, eq(appointments.serviceId, services.id))
-      .innerJoin(customers, eq(appointments, eq(appointments.customerId, customers.id)))
+      .innerJoin(customers, eq(appointments.customerId, customers.id))
       .innerJoin(users, eq(appointments.staffId, users.id))
       .groupBy(appointments.id);
 

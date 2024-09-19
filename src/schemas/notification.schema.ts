@@ -1,6 +1,6 @@
+import { createId } from '@paralleldrive/cuid2';
 import { foreignKey, index, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { users } from './user.schema';
-import { createId } from '@paralleldrive/cuid2';
 
 export const notifications = sqliteTable(
   'notifications',
@@ -24,8 +24,10 @@ export const notifications = sqliteTable(
         name: 'fk_user_id',
         columns: [notifications.userId],
         foreignColumns: [users.id]
-      }),
-      userIndex: index('user_idx').on(notifications.userId)
+      })
+        .onDelete('cascade')
+        .onUpdate('cascade'),
+      userIndex: index('user_idx_notifications').on(notifications.userId)
     };
   }
 );

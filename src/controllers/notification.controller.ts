@@ -3,7 +3,7 @@ import { db } from '@/lib/database';
 import { UnauthorizedException } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
 import { notifications } from '@/schemas/notification.schema';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, desc, eq, lt } from 'drizzle-orm';
 
 export const getNotifications = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
@@ -15,6 +15,7 @@ export const getNotifications = handleAsync(async (req, res) => {
     .select()
     .from(notifications)
     .where(and(eq(notifications.userId, req.user.id), lt(notifications.receivedAt, cursor)))
+    .orderBy((t) => desc(t.receivedAt))
     .limit(limit);
 
   return res.json({ notifications: result });

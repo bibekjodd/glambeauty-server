@@ -46,8 +46,8 @@ export const appointments = sqliteTable(
         .onDelete('cascade')
         .onUpdate('cascade'),
 
-      customerIndex: index('customer_idx').on(appointments.customerId),
-      staffIndex: index('staff_idx').on(appointments.staffId)
+      customerIndex: index('customer_idx_appointments').on(appointments.customerId),
+      staffIndex: index('staff_idx_appointments').on(appointments.staffId)
     };
   }
 );

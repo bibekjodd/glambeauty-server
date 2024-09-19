@@ -75,10 +75,10 @@ export const selectAppointmentsStats = {
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;
-
+export type AppointmentStatus = 'pending' | 'completed' | 'cancelled';
 export type AppointmentStats = {
   id: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: AppointmentStatus;
   startsAt: string;
   endsAt: string;
   bookedAt: string;

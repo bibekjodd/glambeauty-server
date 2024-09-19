@@ -11,6 +11,7 @@ import {
   UnauthorizedException
 } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
+import { appointmentStatusNotification } from '@/notifications/appointment.notifications';
 import { appointments, selectAppointmentSnapshot } from '@/schemas/appointment.schema';
 import { selectServicesSnapshot, services } from '@/schemas/service.schema';
 import {
@@ -30,7 +31,7 @@ export const registerAppointment = handleAsync(async (req, res) => {
     throw new ForbiddenException("Admin or staffs can't request for appointment");
 
   const { date, serviceId, staffId } = registerAppointmentSchema.parse(req.body);
-  const { service } = await checkAppointmentAvailability({ date, serviceId, staffId });
+  const { service, staff } = await checkAppointmentAvailability({ date, serviceId, staffId });
   const endsAt = new Date(
     new Date(date).getTime() + service.duration * 60 * 60 * 1000
   ).toISOString();
@@ -47,6 +48,15 @@ export const registerAppointment = handleAsync(async (req, res) => {
     .returning();
 
   if (!bookedAppointment) throw new BadRequestException(`Unknown error occurred`);
+  appointmentStatusNotification({
+    appointmentId: bookedAppointment.id,
+    date: bookedAppointment.startsAt,
+    reason: null,
+    serviceTitle: service.title,
+    staff,
+    user: req.user,
+    status: 'pending'
+  });
 
   return res.json({
     message: 'Appointment registered successfully',
@@ -126,15 +136,28 @@ export const rescheduleAppointment = handleAsync<{ id: string }>(async (req, res
     throw new BadRequestException(`Appointment is already ${appointment.status}`);
 
   const data = registerAppointmentSchema.parse(req.body);
-  const { service } = await checkAppointmentAvailability(data);
+  const { service, staff } = await checkAppointmentAvailability(data);
   const endsAt = new Date(
     new Date(data.date).getTime() + service.duration * 60 * 60 * 1000
   ).toISOString();
 
-  await db
+  const [rescheduledAppointment] = await db
     .update(appointments)
     .set({ startsAt: data.date, isRescheduled: true, endsAt })
-    .where(eq(appointments.id, appointmentId));
+    .where(eq(appointments.id, appointmentId))
+    .returning();
+  if (!rescheduledAppointment)
+    throw new BadRequestException(`Unknown error occurred while rescheduling appointment`);
+
+  appointmentStatusNotification({
+    appointmentId: rescheduledAppointment.id,
+    date: rescheduledAppointment.startsAt,
+    reason: null,
+    serviceTitle: service.title,
+    staff,
+    user: req.user,
+    status: 'rescheduled'
+  });
 
   return res.json({ message: 'Appointment rescheduled successfully' });
 });
@@ -152,18 +175,43 @@ export const cancelAppointment = handleAsync<{ id: string }, unknown, { cancelRe
 
     const appointmentId = req.params.id;
     const [appointment] = await db
-      .select()
+      .select({
+        ...selectAppointmentSnapshot,
+        staff: selectUserSnapshot,
+        customer: selectCustomerSnapshot,
+        service: selectServicesSnapshot
+      })
       .from(appointments)
-      .where(eq(appointments.id, appointmentId));
+      .where(eq(appointments.id, appointmentId))
+      .leftJoin(services, eq(appointments.serviceId, services.id))
+      .innerJoin(customers, eq(appointments, eq(appointments.customerId, customers.id)))
+      .innerJoin(users, eq(appointments.staffId, users.id))
+      .groupBy(appointments.id);
+
     if (!appointment) throw new NotFoundException('Appointment not found');
 
     if (appointment.status !== 'pending')
       throw new BadRequestException(`Appointment is already ${appointment.status}`);
 
-    await db
+    const [cancelledAppointment] = await db
       .update(appointments)
       .set({ cancelReason, status: 'cancelled' })
-      .where(eq(appointments.id, appointmentId));
+      .where(eq(appointments.id, appointmentId))
+      .returning();
+
+    if (!cancelledAppointment)
+      throw new BadRequestException(`Unknown error occurred while cancelling appointment`);
+
+    appointmentStatusNotification({
+      appointmentId,
+      date: appointment.startsAt,
+      reason: cancelReason || null,
+      serviceTitle: appointment.service?.title || '',
+      staff: appointment.staff,
+      status: 'cancelled',
+      user: appointment.customer
+    });
+
     return res.json({ message: 'Appointment cancelled successfully' });
   }
 );

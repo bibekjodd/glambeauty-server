@@ -23,3 +23,12 @@ export const sessionOptions: SessionOptions = {
   cookie: cookieOptions,
   store: new MongoStore({ mongoUrl: env.MONGO_URI })
 };
+
+export const formatDate = (value: string | Date | number) => {
+  const date = new Date(value);
+  const month = date.toLocaleString('default', { month: 'long' });
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  return `${month} ${day}, ${hours % 12 || 12}${minutes !== 0 ? `:${minutes}` : ''}${hours > 12 ? 'pm' : 'am'}`;
+};

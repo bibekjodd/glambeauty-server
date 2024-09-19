@@ -7,6 +7,7 @@ import {
 import { db } from '@/lib/database';
 import { ForbiddenException, NotFoundException, UnauthorizedException } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
+import { roleUpdateNotification } from '@/notifications/user.notifications';
 import { appointments } from '@/schemas/appointment.schema';
 import { services } from '@/schemas/service.schema';
 import { selectUserSnapshot, users } from '@/schemas/user.schema';
@@ -65,19 +66,25 @@ export const updateProfile = handleAsync(async (req, res) => {
 export const updateUser = handleAsync<{ id: string }, unknown, { role: 'staff' | 'user' }>(
   async (req, res) => {
     if (!req.user) throw new UnauthorizedException();
-    if (req.user.role !== 'admin') throw new ForbiddenException('Only admins can add the staffs');
+    if (req.user.role !== 'admin') throw new ForbiddenException('Only admins can update the users');
+    const data = updateUserSchema.parse(req.body);
 
     const staffId = req.params.id;
-    if (req.user.id === staffId) throw new ForbiddenException("Admins can't demote themselves");
+    if (req.user.id === staffId && data.role)
+      throw new ForbiddenException("Admins can't demote themselves");
 
-    const data = updateUserSchema.parse(req.body);
     const [updatedStaff] = await db
       .update(users)
       .set(data)
       .where(eq(users.id, staffId))
       .returning();
     if (!updatedStaff) throw new NotFoundException('User does not exist');
-
+    if (data.role) {
+      roleUpdateNotification({
+        user: { email: updatedStaff.email, id: updatedStaff.id, name: updatedStaff.name },
+        role: data.role
+      });
+    }
     return res.json({ message: 'User updated successfully' });
   }
 );

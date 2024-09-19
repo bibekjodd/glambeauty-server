@@ -34,7 +34,11 @@ const envSchema = z
     FRONTEND_URLS: z
       .string()
       .optional()
-      .transform((urls) => (urls || '').split(' '))
+      .transform((urls) => (urls || '').split(' ')),
+
+    SMTP_SERVICE: z.string(),
+    SMTP_MAIL: z.string(),
+    SMTP_PASS: z.string()
   })
   .readonly();
 

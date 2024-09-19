@@ -44,6 +44,6 @@ export const selectCustomerSnapshot = {
   address: customers.address,
   active: customers.active
 };
-
+export type UserRole = 'user' | 'staff' | 'admin';
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;

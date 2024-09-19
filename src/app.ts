@@ -12,6 +12,7 @@ import { handleErrorRequest } from './middlewares/handle-error-request';
 import { GoogleStrategy } from './passport/google.strategy';
 import { serializer } from './passport/serializer';
 import { appointmentRoute } from './routes/appointment.route';
+import { notificationRoute } from './routes/notification.route';
 import { serviceRoute } from './routes/service.route';
 import { statsRoute } from './routes/stats.route';
 import { userRoute } from './routes/user.route';
@@ -46,6 +47,7 @@ app.use('/api', userRoute);
 app.use('/api/services', serviceRoute);
 app.use('/api/appointments', appointmentRoute);
 app.use('/api/stats', statsRoute);
+app.use('/api/notifications', notificationRoute);
 app.use(() => {
   throw new NotFoundException();
 });

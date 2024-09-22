@@ -81,11 +81,11 @@ export const getAllAppointments = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
   if (req.user.role !== 'admin')
     throw new ForbiddenException('Only admins can access requested resource');
-  const { cursor, user_id, status } = getAdminAppointmentsQuerySchema.parse(req.query);
+  const { cursor, userId, status } = getAdminAppointmentsQuerySchema.parse(req.query);
 
   let user: User | undefined = undefined;
-  if (user_id) {
-    [user] = await db.select().from(users).where(eq(users.id, user_id));
+  if (userId) {
+    [user] = await db.select().from(users).where(eq(users.id, userId));
   }
 
   if (user) {

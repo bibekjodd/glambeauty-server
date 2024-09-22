@@ -29,5 +29,5 @@ export const getAppointmentsQuerySchema = z.object({
 });
 
 export const getAdminAppointmentsQuerySchema = getAppointmentsQuerySchema.extend({
-  user_id: z.string().optional()
+  userId: z.string().optional()
 });

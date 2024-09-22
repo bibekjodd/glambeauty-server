@@ -1,17 +1,10 @@
-import {
-  availableStaffsQuerySchema,
-  queryUsersSchema,
-  updateProfileSchema,
-  updateUserSchema
-} from '@/dtos/user.dto';
+import { queryUsersSchema, updateProfileSchema, updateUserSchema } from '@/dtos/user.dto';
 import { db } from '@/lib/database';
 import { ForbiddenException, NotFoundException, UnauthorizedException } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
 import { roleUpdateNotification } from '@/notifications/user.notifications';
-import { appointments } from '@/schemas/appointment.schema';
-import { services } from '@/schemas/service.schema';
-import { selectUserSnapshot, users } from '@/schemas/user.schema';
-import { and, asc, eq, gt, like, lte, or, sql } from 'drizzle-orm';
+import { users } from '@/schemas/user.schema';
+import { and, eq, like, or } from 'drizzle-orm';
 
 export const queryUsers = handleAsync(async (req, res) => {
   const { limit, page, q, role } = queryUsersSchema.parse(req.query);
@@ -28,15 +21,6 @@ export const queryUsers = handleAsync(async (req, res) => {
   return res.json({ users: result });
 });
 
-export const getStaffs = handleAsync(async (req, res) => {
-  const result = await db
-    .select()
-    .from(users)
-    .where(or(eq(users.role, 'staff'), eq(users.role, 'admin')))
-    .orderBy(asc(users.name));
-  return res.json({ staffs: result });
-});
-
 export const getProfile = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
   return res.json({ user: req.user });
@@ -47,13 +31,6 @@ export const getUserDetails = handleAsync<{ id: string }>(async (req, res) => {
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (!user) throw new NotFoundException('User not found');
   return res.json({ user });
-});
-
-export const logoutUser = handleAsync(async (req, res) => {
-  if (!req.user) throw new UnauthorizedException();
-  req.logout(() => {
-    res.json({ message: 'User logged out successfully!' });
-  });
 });
 
 export const updateProfile = handleAsync(async (req, res) => {
@@ -88,28 +65,3 @@ export const updateUser = handleAsync<{ id: string }, unknown, { role: 'staff' |
     return res.json({ message: 'User updated successfully' });
   }
 );
-
-export const availableStaffs = handleAsync(async (req, res) => {
-  const { date, service_id } = availableStaffsQuerySchema.parse(req.query);
-  const [service] = await db.select().from(services).where(eq(services.id, service_id));
-
-  if (!service) throw new NotFoundException('The requested service is not found');
-
-  const starts_at = date;
-  const result = await db
-    .select({ ...selectUserSnapshot, activeAppointments: sql<number>`count(${appointments.id})` })
-    .from(users)
-    .leftJoin(
-      appointments,
-      and(
-        lte(appointments.startsAt, starts_at),
-        gt(appointments.endsAt, starts_at),
-        eq(appointments.status, 'pending'),
-        eq(appointments.staffId, users.id)
-      )
-    )
-    .where(eq(users.role, 'staff'))
-    .groupBy(users.id);
-
-  return res.json({ staffs: result });
-});

@@ -18,7 +18,6 @@ const envSchema = z
         return port;
       }),
 
-    MONGO_URI: z.string().url(),
     TURSO_DATABASE_URL: z.string().url(),
     TURSO_AUTH_TOKEN: z.string(),
     SESSION_SECRET: z.string(),
@@ -26,10 +25,6 @@ const envSchema = z
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
     GOOGLE_CALLBACK_URL: z.string(),
-    AUTH_REDIRECT_URI: z
-      .string()
-      .optional()
-      .transform((uri) => uri || '/'),
 
     FRONTEND_URLS: z
       .string()

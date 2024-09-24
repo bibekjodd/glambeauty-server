@@ -169,7 +169,7 @@ export const cancelAppointment = handleAsync<{ id: string }, unknown, { cancelRe
     if (!req.user) throw new UnauthorizedException();
 
     if (req.user.role === 'staff')
-      throw new BadRequestException("Staffs can't cancel the appointment");
+      throw new ForbiddenException("Staffs can't cancel the appointment");
 
     let cancelReason: string | null = null;
     if (typeof req.body.cancelReason === 'string') cancelReason = req.body.cancelReason;

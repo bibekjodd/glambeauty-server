@@ -4,6 +4,7 @@ import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
 import passport from 'passport';
+import { absolutePath } from 'swagger-ui-dist';
 import swaggerUi from 'swagger-ui-express';
 import { env, validateEnv } from './config/env.config';
 import { NotFoundException } from './lib/exceptions';
@@ -48,6 +49,19 @@ app.get(
   })
 );
 
+if (env.NODE_ENV === 'production') {
+  app.use('/api/docs', express.static(absolutePath()));
+}
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(openApiDoc, {
+    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css',
+    customJs: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js',
+    customSiteTitle: 'Glambeauty Api Documentation'
+  })
+);
+
 /* --------- routes --------- */
 app.use('/api/auth', authRoute);
 app.use('/api/users', userRoute);
@@ -57,7 +71,6 @@ app.use('/api/appointments', appointmentRoute);
 app.use('/api/stats', statsRoute);
 app.use('/api/notifications', notificationRoute);
 app.use('/api/feedbacks', feedbackRoute);
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDoc));
 app.use(() => {
   throw new NotFoundException();
 });

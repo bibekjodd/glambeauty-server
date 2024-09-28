@@ -5,7 +5,7 @@ import { handleAsync } from '@/middlewares/handle-async';
 import { appointments } from '@/schemas/appointment.schema';
 import { services } from '@/schemas/service.schema';
 import { selectUserSnapshot, users } from '@/schemas/user.schema';
-import { and, asc, eq, gt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, lt, lte, or, sql } from 'drizzle-orm';
 
 export const getStaffs = handleAsync(async (req, res) => {
   const result = await db
@@ -22,17 +22,22 @@ export const availableStaffs = handleAsync(async (req, res) => {
 
   if (!service) throw new NotFoundException('The requested service is not found');
 
-  const starts_at = date;
+  const startsAt = date;
+  const endsAt = new Date(
+    new Date(startsAt).getTime() + service.duration * 60 * 60 * 1000
+  ).toISOString();
   const result = await db
     .select({ ...selectUserSnapshot, activeAppointments: sql<number>`count(${appointments.id})` })
     .from(users)
     .leftJoin(
       appointments,
       and(
-        lte(appointments.startsAt, starts_at),
-        gt(appointments.endsAt, starts_at),
         eq(appointments.status, 'pending'),
-        eq(appointments.staffId, users.id)
+        eq(appointments.staffId, users.id),
+        or(
+          and(lte(appointments.startsAt, startsAt), gt(appointments.endsAt, startsAt)),
+          and(lt(appointments.startsAt, endsAt), gt(appointments.endsAt, endsAt))
+        )
       )
     )
     .where(eq(users.role, 'staff'))

@@ -12,7 +12,7 @@ import {
   User,
   users
 } from '@/schemas/user.schema';
-import { and, desc, eq, gt, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, lt, or, sql } from 'drizzle-orm';
 
 import { RegisterAppointmentSchema } from '@/dtos/appointment.dto';
 import { BadRequestException, NotFoundException } from '@/lib/exceptions';
@@ -26,16 +26,21 @@ export const checkAppointmentAvailability = async ({
   const [service] = await db.select().from(services).where(eq(services.id, serviceId));
   if (!service) throw new NotFoundException('Service does not exist');
 
+  const endsAt = new Date(
+    new Date(date).getTime() + service.duration * 60 * 60 * 1000
+  ).toISOString();
   const [staff] = await db
     .select({ ...selectUserSnapshot, activeAppointments: sql<number>`count(${appointments.id})` })
     .from(users)
     .leftJoin(
       appointments,
       and(
-        lte(appointments.startsAt, date),
-        gt(appointments.endsAt, date),
         eq(appointments.status, 'pending'),
-        eq(appointments.staffId, users.id)
+        eq(appointments.staffId, users.id),
+        or(
+          and(lte(appointments.startsAt, date), gt(appointments.endsAt, date)),
+          and(lt(appointments.startsAt, endsAt), gt(appointments.endsAt, endsAt))
+        )
       )
     )
     .where(and(eq(users.id, staffId), eq(users.role, 'staff')))

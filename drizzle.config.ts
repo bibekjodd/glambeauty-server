@@ -1,12 +1,12 @@
-import { env } from '@/config/env.config';
 import { type Config } from 'drizzle-kit';
+import { env } from './src/config/env.config';
 
 export default {
-  schema: './src/schemas/*.schema.ts',
-  dialect: 'sqlite',
+  schema: './src/schemas/*schema.ts',
+  dialect: 'turso',
+  casing: 'snake_case',
   dbCredentials: {
     url: env.TURSO_DATABASE_URL,
-    token: env.TURSO_AUTH_TOKEN,
     authToken: env.TURSO_AUTH_TOKEN
   }
 } satisfies Config;

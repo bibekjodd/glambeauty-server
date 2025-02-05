@@ -1,7 +1,7 @@
 import { createId } from '@paralleldrive/cuid2';
 import { foreignKey, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { users } from './user.schema';
 import { services } from './service.schema';
+import { users } from './user.schema';
 
 export const appointments = sqliteTable(
   'appointments',

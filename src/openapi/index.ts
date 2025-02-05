@@ -1,3 +1,4 @@
+import { apiReference } from '@scalar/express-api-reference';
 import { createDocument, ZodOpenApiPathsObject } from 'zod-openapi';
 import { appointmentsDoc } from './appointments.doc';
 import { feedbacksDoc } from './feedbacks.doc';
@@ -5,7 +6,7 @@ import { servicesDoc } from './services.doc';
 import { staffsDoc } from './staffs.doc';
 import { usersDoc } from './users.doc';
 
-export const openApiDoc = createDocument({
+export const openApiSpecs = createDocument({
   openapi: '3.0.0',
   info: {
     title: 'Glambeauty Server',
@@ -27,4 +28,18 @@ export const openApiDoc = createDocument({
     appointmentsDoc,
     feedbacksDoc
   )
+});
+
+export const serveApiReference = apiReference({
+  spec: { content: openApiSpecs },
+  theme: 'kepler',
+  darkMode: true,
+  layout: 'modern',
+  defaultHttpClient: {
+    targetKey: 'javascript',
+    clientKey: 'fetch'
+  },
+  metaData: {
+    title: 'Express Server Api Reference'
+  }
 });

@@ -1,5 +1,12 @@
 import { createId } from '@paralleldrive/cuid2';
-import { alias, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import {
+  alias,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex
+} from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable(
   'users',
@@ -15,12 +22,10 @@ export const users = sqliteTable(
     address: text('address'),
     active: integer('active', { mode: 'boolean' }).notNull().default(true)
   },
-  function constraints(users) {
-    return {
-      primaryKey: primaryKey({ name: 'users_pkey', columns: [users.id] }),
-      uniqueEmail: unique('email').on(users.email)
-    };
-  }
+  (users) => [
+    primaryKey({ name: 'users_pkey', columns: [users.id] }),
+    uniqueIndex('uk_idx_email').on(users.email)
+  ]
 );
 export const customers = alias(users, 'customers');
 

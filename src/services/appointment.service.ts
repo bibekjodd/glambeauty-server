@@ -1,4 +1,6 @@
+import { RegisterAppointmentSchema } from '@/dtos/appointment.dto';
 import { db } from '@/lib/database';
+import { BadRequestException, NotFoundException } from '@/lib/exceptions';
 import {
   appointments,
   AppointmentStatus,
@@ -13,9 +15,6 @@ import {
   users
 } from '@/schemas/user.schema';
 import { and, desc, eq, gt, lt, or, sql } from 'drizzle-orm';
-
-import { RegisterAppointmentSchema } from '@/dtos/appointment.dto';
-import { BadRequestException, NotFoundException } from '@/lib/exceptions';
 import { lte } from 'drizzle-orm';
 
 export const checkAppointmentAvailability = async ({

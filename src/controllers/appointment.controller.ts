@@ -10,6 +10,7 @@ import {
   NotFoundException,
   UnauthorizedException
 } from '@/lib/exceptions';
+import { stripe } from '@/lib/stripe';
 import { handleAsync } from '@/middlewares/handle-async';
 import { appointmentStatusNotification } from '@/notifications/appointment.notifications';
 import { appointments, selectAppointmentSnapshot } from '@/schemas/appointment.schema';
@@ -23,46 +24,56 @@ import {
 } from '@/schemas/user.schema';
 import { checkAppointmentAvailability, fetchAppointments } from '@/services/appointment.service';
 import { eq } from 'drizzle-orm';
+import { CheckoutMetadata } from './webhooks.controller';
 
-export const registerAppointment = handleAsync(async (req, res) => {
-  if (!req.user) throw new UnauthorizedException();
+export const registerAppointment = handleAsync<unknown, { checkoutSessionId: string }>(
+  async (req, res) => {
+    if (!req.user) throw new UnauthorizedException();
 
-  if (req.user.role === 'admin' || req.user.role === 'staff')
-    throw new ForbiddenException("Admin or staffs can't request for appointment");
+    if (req.user.role === 'admin' || req.user.role === 'staff')
+      throw new ForbiddenException("Admin or staffs can't request for appointment");
 
-  const { date, serviceId, staffId } = registerAppointmentSchema.parse(req.body);
-  const { service, staff } = await checkAppointmentAvailability({ date, serviceId, staffId });
-  const endsAt = new Date(
-    new Date(date).getTime() + service.duration * 60 * 60 * 1000
-  ).toISOString();
-  const [bookedAppointment] = await db
-    .insert(appointments)
-    .values({
+    const { date, serviceId, staffId, successUrl, cancelUrl } = registerAppointmentSchema.parse(
+      req.body
+    );
+    const { service } = await checkAppointmentAvailability({ date, serviceId, staffId });
+    const endsAt = new Date(
+      new Date(date).getTime() + service.duration * 60 * 60 * 1000
+    ).toISOString();
+
+    const metadata: CheckoutMetadata = {
       customerId: req.user.id,
       startsAt: date,
       endsAt,
       staffId,
-      serviceId,
-      status: 'pending'
-    })
-    .returning();
+      serviceId
+    };
 
-  if (!bookedAppointment) throw new BadRequestException(`Unknown error occurred`);
-  appointmentStatusNotification({
-    appointmentId: bookedAppointment.id,
-    date: bookedAppointment.startsAt,
-    reason: null,
-    serviceTitle: service.title,
-    staff,
-    user: req.user,
-    status: 'pending'
-  });
+    const checkoutSession = await stripe.checkout.sessions.create({
+      metadata,
+      customer_email: req.user.email,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'npr',
+            unit_amount: service.price * 100,
+            product_data: {
+              name: service.title,
+              description: service.description,
+              images: service.image ? [service.image] : undefined
+            }
+          }
+        }
+      ],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      mode: 'payment'
+    });
 
-  return res.json({
-    message: 'Appointment registered successfully',
-    appointmentId: bookedAppointment.id
-  });
-});
+    return res.json({ checkoutSessionId: checkoutSession.id });
+  }
+);
 
 export const getAppointments = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();

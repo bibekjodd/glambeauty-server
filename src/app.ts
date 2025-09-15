@@ -21,9 +21,11 @@ import { serviceRoute } from './routes/service.route';
 import { staffRoute } from './routes/staff.route';
 import { statsRoute } from './routes/stats.route';
 import { userRoute } from './routes/user.route';
+import { webhooksRoute } from './routes/webhooks.route';
 
 const app = express();
 validateEnv();
+app.use('/api/webhooks', express.text({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({ credentials: true, origin: env.FRONTEND_URLS }));
@@ -56,6 +58,7 @@ app.use('/api/appointments', appointmentRoute);
 app.use('/api/stats', statsRoute);
 app.use('/api/notifications', notificationRoute);
 app.use('/api/feedbacks', feedbackRoute);
+app.use('/api/webhooks', webhooksRoute);
 
 app.get('/doc', (req, res) => {
   return res.json(openApiSpecs);

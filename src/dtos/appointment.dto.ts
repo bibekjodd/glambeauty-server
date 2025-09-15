@@ -13,7 +13,9 @@ export const registerAppointmentSchema = z.object({
       nextMonth.setMilliseconds(0);
       if (date < new Date().toISOString() || date > nextMonth.toISOString()) return false;
       return true;
-    }, 'Invalid date selected')
+    }, 'Invalid date selected'),
+  successUrl: z.string().url(),
+  cancelUrl: z.string().url()
 });
 export type RegisterAppointmentSchema = z.infer<typeof registerAppointmentSchema>;
 

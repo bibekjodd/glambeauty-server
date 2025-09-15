@@ -1,4 +1,3 @@
-import { RegisterAppointmentSchema } from '@/dtos/appointment.dto';
 import { db } from '@/lib/database';
 import { BadRequestException, NotFoundException } from '@/lib/exceptions';
 import {
@@ -14,14 +13,17 @@ import {
   User,
   users
 } from '@/schemas/user.schema';
-import { and, desc, eq, gt, lt, or, sql } from 'drizzle-orm';
-import { lte } from 'drizzle-orm';
+import { and, desc, eq, gt, lt, lte, or, sql } from 'drizzle-orm';
 
 export const checkAppointmentAvailability = async ({
   date,
   serviceId,
   staffId
-}: RegisterAppointmentSchema): Promise<{ service: Service; staff: User }> => {
+}: {
+  date: string;
+  serviceId: string;
+  staffId: string;
+}): Promise<{ service: Service; staff: User }> => {
   const [service] = await db.select().from(services).where(eq(services.id, serviceId));
   if (!service) throw new NotFoundException('Service does not exist');
 

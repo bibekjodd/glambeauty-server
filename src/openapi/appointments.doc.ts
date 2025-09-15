@@ -34,7 +34,8 @@ export const appointmentsDoc: ZodOpenApiPathsObject = {
       },
       responses: {
         201: {
-          description: 'Appointment booked successfully'
+          description: 'Appointment booked successfully',
+          content: { 'application/json': { schema: z.object({ checkoutSessionId: z.string() }) } }
         },
         400: {
           description: 'Invalid request body payload'
